@@ -1,6 +1,6 @@
 <template>
   <div>
-    <div class="container-movie">
+    <div class="container-movie" ref="containerMovie">
       <div v-for="movie in moviesList" :key="movie.name">
         <display-movies
           :movieImage="path+movie.poster_path"
@@ -9,6 +9,10 @@
         >
         </display-movies>
       </div>
+    </div>
+    <div class="change-page">
+      
+      <p class="pagination">Page <input class="input-page" v-model="pageIndex" @keyup.enter="getPage(pageIndex)"> / 500</p>
     </div>
     <div class="change-page">
       <button class="btn-page" v-if="pageIndex!=1" @click="getPage(pageIndex-1)"> Précédent </button>
@@ -26,7 +30,7 @@
               </div> 
             </div>
             <div class="fav">
-              <button class="btn-fav" @click="addToList(oneMovie)">+ Ajouter à ma liste</button>
+              <button  class="btn-fav" @click="addToList(oneMovie)">+ Ajouter à ma liste</button>
             </div>
           </div>
         </modal>
@@ -34,6 +38,13 @@
 </template>
 
 <script>
+import Vue from 'vue';
+// Import component
+import Loading from 'vue-loading-overlay';
+// Import stylesheet
+import 'vue-loading-overlay/dist/vue-loading.css';
+// Init plugin
+Vue.use(Loading);
 import DisplayMovies from '../components/DisplayMovies.vue';
 import axios from 'axios'; 
 export default {
@@ -45,24 +56,37 @@ export default {
     },
     mounted(){
       this.getAllMovies();
-      console.log("La liste : ",localStorage.getItem('maListe'));
-      this.maListe = JSON.parse(localStorage.getItem('maListe'));
+      //localStorage.removeItem('maListe');
+      console.log("La liste storage: ",JSON.parse(localStorage.getItem('maListe')));
+      console.log("La liste variable", this.maliste)
     },
     data(){
       return{
+        fullPage: false,
         moviesList:null,
         path : "https://image.tmdb.org/t/p/original",
         oneMovie:null,
         release_date: null,
         pageIndex:null,
-        maliste:[]
+        maliste:[],
       }
     },
     methods: {
       async getAllMovies(){
-        const moviesTemp = await axios.get('https://api.themoviedb.org/3/movie/popular?api_key=a4064789326294d183507ea07077479f&language=fr');
-        this.moviesList = moviesTemp.data.results;
-        this.pageIndex = moviesTemp.data.page;
+          let loader = this.$loading.show({
+            // Optional parameters
+                  container: this.fullPage ? null : this.$refs.formContainer,
+                  canCancel: true,
+                  onCancel: this.onCancel,
+                  color: "#e4872c"
+            });
+        axios.get('https://api.themoviedb.org/3/movie/popular?api_key=a4064789326294d183507ea07077479f&language=fr').then(resp =>{
+          this.moviesList = resp.data.results;
+          this.pageIndex = resp.data.page;
+          loader.hide()
+        });
+        
+        
       },
       hide () {
             this.$modal.hide('details');
@@ -71,8 +95,8 @@ export default {
         this.$modal.show('details');
         const movie = await axios.get(`https://api.themoviedb.org/3/movie/${movieId}?api_key=a4064789326294d183507ea07077479f&language=fr`);
         this.oneMovie = movie.data;
-        const yearRelease = this.oneMovie.release_date.split('-');
-        this.release_date = yearRelease[0];
+        // const yearRelease = this.oneMovie.release_date.split('-');
+        // this.release_date = yearRelease[0];
         
       },
       async getPage(index){
@@ -80,12 +104,12 @@ export default {
         const moviesTemp = await axios.get(`https://api.themoviedb.org/3/movie/popular?api_key=a4064789326294d183507ea07077479f&language=fr&page=${index}`);
         this.moviesList = moviesTemp.data.results;
       },
-      addToList(movie){
-       this.maliste.push(movie);
-        console.log(this.maliste)
-        localStorage.setItem('maListe', JSON.stringify( this.maliste) );
-        
-      }
+addToList(movie) {
+      console.log(this.maliste);
+      this.maListe = JSON.parse(localStorage.getItem("maListe"));
+      this.maliste.push(movie);
+      localStorage.setItem("maListe", JSON.stringify(this.maliste));
+    },
     }
   }
 </script>
@@ -175,5 +199,21 @@ export default {
   padding: 3px;
   padding: 1rem;
   position: relative;
+}
+.pagination{
+    margin-top: 1em;
+    font-weight: bold;
+    font-size: 22px;
+    color: #e4872c;
+    font-family: fantasy;
+    margin-bottom: 1em;
+    
+}
+.input-page{
+      font-weight: bold;
+    font-size: 22px;
+    color: #e4872c;
+    font-family: fantasy;
+  width: 40px;
 }
 </style>
