@@ -2,7 +2,7 @@
 <div>
   <header>
     <div class="header-bar">
-      <p class="title">The Moviez Review</p>
+      <p class="title">The Moviez </p>
       <div class="btn-container">
         <button class="btn-1"> <router-link to='/'>Accueil </router-link>  </button>
         <button class="btn-1"> <router-link to='/list'>Ma Liste</router-link>  </button>
